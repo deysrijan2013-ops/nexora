@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>NEXORA — Business OS</title>
+  <meta name="description" content="Modern business management dashboard">
+  <link rel="stylesheet" href="css/styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script defer src="js/app.js"></script>
+</head>
+<body>
+  <div id="boot" class="boot">
+    <div class="boot-card">
+      <div class="logo-mark">N</div>
+      <strong>NEXORA</strong>
+      <span>Business OS</span>
+      <div class="boot-bar"><i></i></div>
+    </div>
+  </div>
+
+  <div id="app" class="app hidden">
+    <aside class="sidebar">
+      <div class="brand"><div class="logo-mark">N</div><div><b>NEXORA</b><small>BUSINESS OS</small></div></div>
+      <nav id="nav">
+        <button data-page="dashboard" class="active">⌂ <span>Dashboard</span></button>
+        <button data-page="sales">↗ <span>Sales</span></button>
+        <button data-page="purchases">↙ <span>Purchases</span></button>
+        <button data-page="inventory">▦ <span>Inventory</span></button>
+        <button data-page="products">◇ <span>Products</span></button>
+        <button data-page="customers">◎ <span>Customers</span></button>
+        <button data-page="manufacturers">◈ <span>Manufacturers</span></button>
+        <button data-page="payments">₹ <span>Payments</span></button>
+        <button data-page="expenses">− <span>Expenses</span></button>
+        <button data-page="market">✦ <span>Market</span></button>
+        <button data-page="analytics">⌁ <span>Analytics</span></button>
+      </nav>
+      <div class="sidebar-bottom">
+        <div id="connection" class="connection"><i></i> Connecting…</div>
+        <button id="logout" class="ghost">⇥ <span>Log out</span></button>
+      </div>
+    </aside>
+
+    <main>
+      <header class="topbar">
+        <button id="menu" class="menu">☰</button>
+        <div class="search"><span>⌕</span><input id="globalSearch" placeholder="Search anything…"><kbd>⌘ K</kbd></div>
+        <div class="top-actions"><button id="refresh" class="icon-btn">↻</button><button id="newBtn" class="primary">＋ New</button><div id="avatar" class="avatar">N</div></div>
+      </header>
+      <section id="page" class="page"></section>
+    </main>
+  </div>
+
+  <div id="modal" class="modal hidden"><div class="modal-backdrop"></div><div class="modal-box"><button id="closeModal" class="close">×</button><div id="modalContent"></div></div></div>
+  <div id="toast" class="toast"></div>
+</body>
+</html>
