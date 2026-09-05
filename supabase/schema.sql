@@ -1,106 +1,26 @@
--- BIZORA PUBLIC SCHEMA
--- Safe for a fresh Supabase project. If you already have old tables with incompatible
--- columns/RLS, use a fresh project or migrate those tables deliberately; do not blindly
--- drop production data.
-
 create extension if not exists pgcrypto;
-
-create table if not exists public.businesses (
-  id uuid primary key default gen_random_uuid(),
-  owner_id uuid not null references auth.users(id) on delete cascade,
-  name text not null,
-  phone text,
-  address text,
-  tax_id text,
-  logo_url text,
-  invoice_prefix text default 'INV',
-  bill_footer text default 'Thank you for your business.',
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
-);
-
-create table if not exists public.profiles (
-  id uuid primary key references auth.users(id) on delete cascade,
-  business_id uuid references public.businesses(id) on delete cascade,
-  full_name text,
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
-);
-
-create table if not exists public.customers (
- id uuid primary key default gen_random_uuid(), business_id uuid not null references public.businesses(id) on delete cascade,
- name text not null, phone text, email text, address text, created_at timestamptz not null default now(), updated_at timestamptz not null default now()
-);
-create table if not exists public.manufacturers (
- id uuid primary key default gen_random_uuid(), business_id uuid not null references public.businesses(id) on delete cascade,
- name text not null, phone text, email text, address text, created_at timestamptz not null default now(), updated_at timestamptz not null default now()
-);
-create table if not exists public.products (
- id uuid primary key default gen_random_uuid(), business_id uuid not null references public.businesses(id) on delete cascade,
- name text not null, sku text, sale_price numeric(14,2) default 0, cost_price numeric(14,2) default 0, stock numeric(14,2) default 0,
- low_stock_threshold numeric(14,2) default 5, unit text default 'pcs', created_at timestamptz not null default now(), updated_at timestamptz not null default now()
-);
-create table if not exists public.sales (
- id uuid primary key default gen_random_uuid(), business_id uuid not null references public.businesses(id) on delete cascade,
- invoice_no text, customer_name text, sale_date date default current_date, total numeric(14,2) default 0, status text default 'Completed',
- created_at timestamptz not null default now(), updated_at timestamptz not null default now()
-);
-create table if not exists public.purchases (
- id uuid primary key default gen_random_uuid(), business_id uuid not null references public.businesses(id) on delete cascade,
- invoice_no text, manufacturer_name text, purchase_date date default current_date, total numeric(14,2) default 0, status text default 'Completed',
- created_at timestamptz not null default now(), updated_at timestamptz not null default now()
-);
-create table if not exists public.payments (
- id uuid primary key default gen_random_uuid(), business_id uuid not null references public.businesses(id) on delete cascade,
- reference text, amount numeric(14,2) default 0, method text default 'Cash', notes text, created_at timestamptz not null default now(), updated_at timestamptz not null default now()
-);
-create table if not exists public.expenses (
- id uuid primary key default gen_random_uuid(), business_id uuid not null references public.businesses(id) on delete cascade,
- category text, amount numeric(14,2) default 0, notes text, created_at timestamptz not null default now(), updated_at timestamptz not null default now()
-);
-create table if not exists public.market_items (
- id uuid primary key default gen_random_uuid(), business_id uuid not null references public.businesses(id) on delete cascade,
- name text not null, price numeric(14,2) default 0, source text, notes text, created_at timestamptz not null default now(), updated_at timestamptz not null default now()
-);
-
-alter table public.businesses enable row level security;
-alter table public.profiles enable row level security;
-alter table public.customers enable row level security;
-alter table public.manufacturers enable row level security;
-alter table public.products enable row level security;
-alter table public.sales enable row level security;
-alter table public.purchases enable row level security;
-alter table public.payments enable row level security;
-alter table public.expenses enable row level security;
-alter table public.market_items enable row level security;
-
-create or replace function public.current_business_id()
-returns uuid language sql stable security definer set search_path=public
-as $$ select business_id from public.profiles where id=auth.uid() limit 1 $$;
-
-create policy "biz owner read" on public.businesses for select to authenticated
-using (owner_id=auth.uid());
-create policy "biz owner update" on public.businesses for update to authenticated
-using (owner_id=auth.uid()) with check (owner_id=auth.uid());
-create policy "biz owner insert" on public.businesses for insert to authenticated
-with check (owner_id=auth.uid());
-
-create policy "profile self read" on public.profiles for select to authenticated
-using (id=auth.uid());
-create policy "profile self insert" on public.profiles for insert to authenticated
-with check (id=auth.uid());
-create policy "profile self update" on public.profiles for update to authenticated
-using (id=auth.uid()) with check (id=auth.uid());
-
-do $$
-declare t text;
-begin
- foreach t in array array['customers','manufacturers','products','sales','purchases','payments','expenses','market_items']
- loop
-   execute format('drop policy if exists "business isolation" on public.%I',t);
-   execute format('create policy "business isolation" on public.%I for all to authenticated using (business_id=public.current_business_id()) with check (business_id=public.current_business_id())',t);
- end loop;
-end $$;
-
--- OAuth setup is done in Supabase Dashboard > Authentication > Providers.
--- Enable Google and/or GitHub and add your deployed Vercel URL to Redirect URLs.
+create table if not exists businesses(id uuid primary key default gen_random_uuid(),name text not null,owner_id uuid not null unique references auth.users(id) on delete cascade,phone text default '',address text default '',tax_id text default '',invoice_prefix text default 'INV',bill_footer text default 'Thank you for your business.',logo_url text default '',created_at timestamptz default now(),updated_at timestamptz default now());
+create table if not exists profiles(id uuid primary key references auth.users(id) on delete cascade,business_id uuid not null references businesses(id) on delete cascade,full_name text default '',created_at timestamptz default now());
+create table if not exists customers(id uuid primary key default gen_random_uuid(),business_id uuid not null references businesses(id) on delete cascade,name text not null,phone text default '',email text default '',address text default '',created_at timestamptz default now());
+create table if not exists manufacturers(id uuid primary key default gen_random_uuid(),business_id uuid not null references businesses(id) on delete cascade,name text not null,phone text default '',email text default '',address text default '',created_at timestamptz default now());
+create table if not exists products(id uuid primary key default gen_random_uuid(),business_id uuid not null references businesses(id) on delete cascade,name text not null,sku text default '',sale_price numeric default 0,cost_price numeric default 0,stock numeric default 0,low_stock_threshold numeric default 5,unit text default 'pcs',created_at timestamptz default now());
+create table if not exists sales(id uuid primary key default gen_random_uuid(),business_id uuid not null references businesses(id) on delete cascade,invoice_no text default '',customer_name text default '',sale_date date default current_date,total numeric default 0,status text default 'Completed',created_at timestamptz default now());
+create table if not exists purchases(id uuid primary key default gen_random_uuid(),business_id uuid not null references businesses(id) on delete cascade,invoice_no text default '',manufacturer_name text default '',purchase_date date default current_date,total numeric default 0,status text default 'Received',created_at timestamptz default now());
+create table if not exists payments(id uuid primary key default gen_random_uuid(),business_id uuid not null references businesses(id) on delete cascade,reference text default '',amount numeric default 0,method text default 'Cash',notes text default '',created_at timestamptz default now());
+create table if not exists expenses(id uuid primary key default gen_random_uuid(),business_id uuid not null references businesses(id) on delete cascade,category text default '',amount numeric default 0,notes text default '',created_at timestamptz default now());
+create table if not exists market_items(id uuid primary key default gen_random_uuid(),business_id uuid not null references businesses(id) on delete cascade,name text not null,price numeric default 0,source text default '',notes text default '',created_at timestamptz default now());
+create or replace function public.current_business_id() returns uuid language sql stable security definer set search_path=public as $$ select business_id from profiles where id=auth.uid() limit 1 $$;
+create or replace function public.enable_bizora_rls() returns void language plpgsql as $$ declare t text; begin foreach t in array array['businesses','profiles','customers','manufacturers','products','sales','purchases','payments','expenses','market_items'] loop execute format('alter table public.%I enable row level security',t); end loop; end $$;
+select public.enable_bizora_rls(); drop function public.enable_bizora_rls();
+create policy "owner businesses" on businesses for all using (owner_id=auth.uid()) with check (owner_id=auth.uid());
+create policy "own profiles" on profiles for all using (id=auth.uid()) with check (id=auth.uid());
+create policy "own customers" on customers for all using (business_id=public.current_business_id()) with check (business_id=public.current_business_id());
+create policy "own manufacturers" on manufacturers for all using (business_id=public.current_business_id()) with check (business_id=public.current_business_id());
+create policy "own products" on products for all using (business_id=public.current_business_id()) with check (business_id=public.current_business_id());
+create policy "own sales" on sales for all using (business_id=public.current_business_id()) with check (business_id=public.current_business_id());
+create policy "own purchases" on purchases for all using (business_id=public.current_business_id()) with check (business_id=public.current_business_id());
+create policy "own payments" on payments for all using (business_id=public.current_business_id()) with check (business_id=public.current_business_id());
+create policy "own expenses" on expenses for all using (business_id=public.current_business_id()) with check (business_id=public.current_business_id());
+create policy "own market_items" on market_items for all using (business_id=public.current_business_id()) with check (business_id=public.current_business_id());
+create or replace function public.handle_new_user() returns trigger language plpgsql security definer set search_path=public as $$ declare b uuid; n text; begin n=coalesce(new.raw_user_meta_data->>'full_name',split_part(new.email,'@',1),'Owner'); insert into businesses(name,owner_id) values(n||'''s Business',new.id) returning id into b; insert into profiles(id,business_id,full_name) values(new.id,b,n); return new; end $$;
+drop trigger if exists on_auth_user_created on auth.users; create trigger on_auth_user_created after insert on auth.users for each row execute function public.handle_new_user();
